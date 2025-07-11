@@ -17,7 +17,7 @@ enum CallStatus {
 }
 
 interface SavedMessage {
-  role: "user" | "system" | "workflow";
+  role: "user" | "system" | "assistant";
   content: string;
 }
 
@@ -46,8 +46,7 @@ const Agent = ({
 
     const onMessage = (message: Message) => {
       if (message.type === "transcript" && message.transcriptType === "final") {
-        // Ensure role is cast to SavedMessage['role']
-        const newMessage: SavedMessage = { role: message.role as SavedMessage['role'], content: message.transcript };
+        const newMessage = { role: message.role, content: message.transcript };
         setMessages((prev) => [...prev, newMessage]);
       }
     };
@@ -115,24 +114,35 @@ const Agent = ({
     }
   }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
-  const handleCall = async () => {
-    setCallStatus(CallStatus.CONNECTING);
+  // filepath: c:\ai_interviewer\components\Agent.tsx
+// ...existing code...
+const handleCall = async () => {
+  setCallStatus(CallStatus.CONNECTING);
 
-     if (type === "generate") {
-      await vapi.start({
-        workflowId: process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
-        variableValues: { username: userName, userid: userId },
-      } as any
-    );
-    } else {
-      const formatted = questions?.map(q => `- ${q}`).join("\n") ?? "";
-      await vapi.start({
-        workflowId: interviewerWorkflowId, 
-        variableValues: { questions: formatted },
-      } as any
-    );
-    }
-  };
+  let workflowId = type === "generate"
+    ? process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID
+    : interviewerWorkflowId;
+
+  if (!workflowId) {
+    alert("Workflow ID is missing. Please check your environment variables.");
+    setCallStatus(CallStatus.INACTIVE);
+    return;
+  }
+
+  if (type === "generate") {
+    await vapi.start({
+      workflowId,
+      variableValues: { username: userName, userid: userId },
+    } as any);
+  } else {
+    const formatted = questions?.map(q => `- ${q}`).join("\n") ?? "";
+    await vapi.start({
+      workflowId,
+      variableValues: { questions: formatted },
+    } as any);
+  }
+};
+// ...existing code...
 
   const handleDisconnect = () => {
     setCallStatus(CallStatus.FINISHED);
