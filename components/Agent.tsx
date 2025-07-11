@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
-import { interviewer } from "@/constants";
+import {  interviewerWorkflowId } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
 
 enum CallStatus {
@@ -36,8 +36,13 @@ const Agent = ({
   const [lastMessage, setLastMessage] = useState<string>("");
 
   useEffect(() => {
-    const onCallStart = () => setCallStatus(CallStatus.ACTIVE);
-    const onCallEnd = () => setCallStatus(CallStatus.FINISHED);
+    const onCallStart = () => {
+      setCallStatus(CallStatus.ACTIVE);
+    };
+
+    const onCallEnd = () => {
+      setCallStatus(CallStatus.FINISHED);
+    };
 
     const onMessage = (message: Message) => {
       if (message.type === "transcript" && message.transcriptType === "final") {
@@ -46,9 +51,19 @@ const Agent = ({
       }
     };
 
-    const onSpeechStart = () => setIsSpeaking(true);
-    const onSpeechEnd = () => setIsSpeaking(false);
-    const onError = (error: Error) => console.log("Error:", error);
+    const onSpeechStart = () => {
+      console.log("speech start");
+      setIsSpeaking(true);
+    };
+
+    const onSpeechEnd = () => {
+      console.log("speech end");
+      setIsSpeaking(false);
+    };
+
+    const onError = (error: Error) => {
+      console.log("Error:", error);
+    };
 
     vapi.on("call-start", onCallStart);
     vapi.on("call-end", onCallEnd);
@@ -72,17 +87,20 @@ const Agent = ({
       setLastMessage(messages[messages.length - 1].content);
     }
 
-    const handleGenerateFeedback = async (msgs: SavedMessage[]) => {
+    const handleGenerateFeedback = async (messages: SavedMessage[]) => {
+      console.log("handleGenerateFeedback");
+
       const { success, feedbackId: id } = await createFeedback({
         interviewId: interviewId!,
         userId: userId!,
-        transcript: msgs,
+        transcript: messages,
         feedbackId,
       });
 
       if (success && id) {
         router.push(`/interview/${interviewId}/feedback`);
       } else {
+        console.log("Error saving feedback");
         router.push("/");
       }
     };
@@ -99,30 +117,19 @@ const Agent = ({
   const handleCall = async () => {
     setCallStatus(CallStatus.CONNECTING);
 
-    if (type === "generate") {
-      await vapi.start(
-        {
-          workflowId: process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
-          variableValues: {
-            username: userName,
-            userid: userId,
-          },
-        } as any // cast suppresses outdated SDK typings
-      );
+     if (type === "generate") {
+      await vapi.start({
+        workflowId: process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
+        variableValues: { username: userName, userid: userId },
+      } as any
+    );
     } else {
-      let formattedQuestions = "";
-      if (questions) {
-        formattedQuestions = questions.map(q => `- ${q}`).join("\n");
-      }
-
-      await vapi.start(
-        {
-          workflowId: interviewer,
-          variableValues: {
-            questions: formattedQuestions,
-          },
-        } as any
-      );
+      const formatted = questions?.map(q => `- ${q}`).join("\n") ?? "";
+      await vapi.start({
+        workflowId: interviewerWorkflowId,
+        variableValues: { questions: formatted },
+      } as any
+    );
     }
   };
 
@@ -182,13 +189,14 @@ const Agent = ({
 
       <div className="w-full flex justify-center">
         {callStatus !== "ACTIVE" ? (
-          <button className="relative btn-call" onClick={handleCall}>
+          <button className="relative btn-call" onClick={() => handleCall()}>
             <span
               className={cn(
                 "absolute animate-ping rounded-full opacity-75",
                 callStatus !== "CONNECTING" && "hidden"
               )}
             />
+
             <span className="relative">
               {callStatus === "INACTIVE" || callStatus === "FINISHED"
                 ? "Call"
@@ -196,7 +204,7 @@ const Agent = ({
             </span>
           </button>
         ) : (
-          <button className="btn-disconnect" onClick={handleDisconnect}>
+          <button className="btn-disconnect" onClick={() => handleDisconnect()}>
             End
           </button>
         )}
