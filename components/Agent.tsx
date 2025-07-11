@@ -119,9 +119,12 @@ const Agent = ({
 const handleCall = async () => {
   setCallStatus(CallStatus.CONNECTING);
 
-  let workflowId = type === "generate"
+   let workflowId = type === "generate"
     ? process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID
     : interviewerWorkflowId;
+
+  // Log the workflow ID to the browser console
+  console.log("Workflow ID:", workflowId);
 
   if (!workflowId) {
     alert("Workflow ID is missing. Please check your environment variables.");
