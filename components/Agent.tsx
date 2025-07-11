@@ -119,14 +119,14 @@ const Agent = ({
 
      if (type === "generate") {
       await vapi.start({
-        workflowId: process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
+        workflow: process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!,
         variableValues: { username: userName, userid: userId },
       } as any
     );
     } else {
       const formatted = questions?.map(q => `- ${q}`).join("\n") ?? "";
       await vapi.start({
-        workflowId: interviewerWorkflowId,
+        workflow: interviewerWorkflowId, 
         variableValues: { questions: formatted },
       } as any
     );
