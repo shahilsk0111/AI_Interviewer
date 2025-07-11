@@ -146,6 +146,7 @@ const handleCall = async () => {
   if (type === "generate") {
       await vapi.start({
         workflowId,
+        assistantOverrides: {
         variableValues: {
           username: userName,
           userid: userId,
@@ -155,11 +156,13 @@ const handleCall = async () => {
           techstack: Array.isArray(techstack) ? techstack.join(", ") : techstack,
           amount: (amount ?? 0).toString(),
         },
+      }
       } as any);
     } else {
       const formatted = questions?.map(q => `- ${q}`).join("\n") ?? "";
       await vapi.start({
         workflowId,
+        assitantOverrides: {
         variableValues: {
           questions: formatted,
           username: userName,
@@ -170,6 +173,7 @@ const handleCall = async () => {
           techstack: Array.isArray(techstack) ? techstack.join(", ") : techstack,
           amount: (amount ?? 0).toString(),
         },
+      }
       } as any);
   }
 };
