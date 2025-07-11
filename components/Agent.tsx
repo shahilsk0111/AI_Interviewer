@@ -28,7 +28,18 @@ const Agent = ({
   feedbackId,
   type,
   questions,
-}: AgentProps) => {
+  role,
+  interviewType,
+  level,
+  techstack,
+  amount,
+}: AgentProps & {
+  role: string;
+  interviewType: string;
+  level: string;
+  techstack: string[] | string;
+  amount?: number;
+}) => {
   const router = useRouter();
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
@@ -133,16 +144,33 @@ const handleCall = async () => {
   }
 
   if (type === "generate") {
-    await vapi.start({
-      workflowId,
-      variableValues: { username: userName, userid: userId },
-    } as any);
-  } else {
-    const formatted = questions?.map(q => `- ${q}`).join("\n") ?? "";
-    await vapi.start({
-      workflowId,
-      variableValues: { questions: formatted },
-    } as any);
+      await vapi.start({
+        workflowId,
+        variableValues: {
+          username: userName,
+          userid: userId,
+          role,
+          type: interviewType,
+          level,
+          techstack: Array.isArray(techstack) ? techstack.join(", ") : techstack,
+          amount: (amount ?? 0).toString(),
+        },
+      } as any);
+    } else {
+      const formatted = questions?.map(q => `- ${q}`).join("\n") ?? "";
+      await vapi.start({
+        workflowId,
+        variableValues: {
+          questions: formatted,
+          username: userName,
+          userid: userId,
+          role,
+          type: interviewType,
+          level,
+          techstack: Array.isArray(techstack) ? techstack.join(", ") : techstack,
+          amount: (amount ?? 0).toString(),
+        },
+      } as any);
   }
 };
 // ...existing code...
