@@ -17,7 +17,7 @@ enum CallStatus {
 }
 
 interface SavedMessage {
-  role: "user" | "system" | "assistant";
+  role: "user" | "system" | "workflow";
   content: string;
 }
 
@@ -46,7 +46,8 @@ const Agent = ({
 
     const onMessage = (message: Message) => {
       if (message.type === "transcript" && message.transcriptType === "final") {
-        const newMessage = { role: message.role, content: message.transcript };
+        // Ensure role is cast to SavedMessage['role']
+        const newMessage: SavedMessage = { role: message.role as SavedMessage['role'], content: message.transcript };
         setMessages((prev) => [...prev, newMessage]);
       }
     };
