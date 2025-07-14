@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 import { vapi } from "@/lib/vapi.sdk";
-import {  interviewerWorkflowId } from "@/constants";
+import { interviewer } from "@/constants";
 import { createFeedback } from "@/lib/actions/general.action";
 
 enum CallStatus {
@@ -16,10 +16,13 @@ enum CallStatus {
   FINISHED = "FINISHED",
 }
 
+
 interface SavedMessage {
   role: "user" | "system" | "assistant";
   content: string;
 }
+
+
 
 const Agent = ({
   userName,
@@ -28,18 +31,9 @@ const Agent = ({
   feedbackId,
   type,
   questions,
-  role,
-  interviewType,
-  level,
-  techstack,
-  amount,
-}: AgentProps & {
-  role: string;
-  interviewType: string;
-  level: string;
-  techstack: string[] | string;
-  amount?: number;
-}) => {
+  profileImage,
+  profileURL,
+}: AgentProps) => {
   const router = useRouter();
   const [callStatus, setCallStatus] = useState<CallStatus>(CallStatus.INACTIVE);
   const [messages, setMessages] = useState<SavedMessage[]>([]);
@@ -125,64 +119,42 @@ const Agent = ({
     }
   }, [messages, callStatus, feedbackId, interviewId, router, type, userId]);
 
-  // filepath: c:\ai_interviewer\components\Agent.tsx
-// ...existing code...
-const handleCall = async () => {
-  setCallStatus(CallStatus.CONNECTING);
+  const handleCall = async () => {
+    setCallStatus(CallStatus.CONNECTING);
 
-   let workflowId = type === "generate"
-    ? process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID
-    : interviewerWorkflowId;
-
-  // Log the workflow ID to the browser console
-  console.log("Workflow ID:", workflowId);
-
-  if (!workflowId) {
-    alert("Workflow ID is missing. Please check your environment variables.");
-    setCallStatus(CallStatus.INACTIVE);
-    return;
-  }
-
-  if (type === "generate") {
-      await vapi.start({
-        workflowId,
-        assistantOverrides: {
+    if (type === "generate") {
+      await vapi.start(process.env.NEXT_PUBLIC_VAPI_WORKFLOW_ID!, {
         variableValues: {
           username: userName,
           userid: userId,
-          role,
-          type: interviewType,
-          level,
-          techstack: Array.isArray(techstack) ? techstack.join(", ") : techstack,
-          amount: (amount ?? 0).toString(),
         },
-      }
-      } as any);
+      });
     } else {
-      const formatted = questions?.map(q => `- ${q}`).join("\n") ?? "";
-      await vapi.start({
-        workflowId,
-        assitantOverrides: {
-        variableValues: {
-          questions: formatted,
-          username: userName,
-          userid: userId,
-          role,
-          type: interviewType,
-          level,
-          techstack: Array.isArray(techstack) ? techstack.join(", ") : techstack,
-          amount: (amount ?? 0).toString(),
-        },
+      let formattedQuestions = "";
+      if (questions) {
+        formattedQuestions = questions
+          .map((question) => `- ${question}`)
+          .join("\n");
       }
-      } as any);
-  }
-};
-// ...existing code...
+
+      await vapi.start(interviewer, {
+        variableValues: {
+          questions: formattedQuestions,
+        },
+      });
+    }
+  };
 
   const handleDisconnect = () => {
     setCallStatus(CallStatus.FINISHED);
     vapi.stop();
   };
+
+interface user {
+ 
+  profileImage?: string 
+
+}
 
   return (
     <>
@@ -206,7 +178,7 @@ const handleCall = async () => {
         <div className="card-border">
           <div className="card-content">
             <Image
-              src="/user-avatar.png"
+              src={profileURL || "profile.svg"}
               alt="profile-image"
               width={539}
               height={539}
